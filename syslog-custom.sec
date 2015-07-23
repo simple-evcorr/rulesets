@@ -1,0 +1,63 @@
+#############################################################################
+# Sample SEC ruleset for syslog logging with non-constant program name
+# (the ruleset works on Linux with /dev/log socket in datagram mode)
+#
+# Copyright (C) 2013 Risto Vaarandi
+# This is free software. You may redistribute copies of it under the terms of 
+# the GNU General Public License version 2.
+# There is NO WARRANTY, to the extent permitted by law.
+#############################################################################
+
+# Load the SecStuff module
+
+type=Single
+ptype=SubStr
+pattern=SEC_STARTUP
+context=SEC_INTERNAL_EVENT
+desc=Load the SecStuff module
+action=eval %a (require '/usr/local/sec/SecStuff.pm'); \
+       if %a ( none ) else ( eval %a exit(1) )
+
+# the following rule implements syslog logging for test messages with 
+# variable program names
+
+type=Single
+ptype=RegExp
+pattern=test: (\S+): (.+)
+desc=log message '$2' for program $1 with priority daemon.info
+action=lcall %pt daemon info -> ( sub { SecStuff::syslog_pri_time(@_) } ); \
+       udgram /dev/log %pt $1: $2
+
+
+##### the content of the /usr/local/sec/SecStuff.pm file #####
+
+package SecStuff;
+
+use strict;
+use warnings;
+
+our $VERSION = '1.00';
+use base qw(Exporter);
+our @EXPORT_OK = qw(syslog_pri_time);
+
+use POSIX qw(strftime);
+
+my(%facility) = ( 'kern' => 0, 'user' => 1, 'mail' => 2, 
+  'daemon' => 3, 'auth' => 4, 'syslog' => 5, 'lpr' => 6, 
+  'news' => 7, 'uucp' => 8, 'cron' => 9, 'authpriv' => 10, 
+  'ftp' => 11, 'ntp' => 12, 'local0' => 16, 'local1' => 17, 
+  'local2' => 18, 'local3' => 19, 'local4' => 20, 
+  'local5' => 21, 'local6' => 22, 'local7' => 23 );
+
+my(%level) = ('emerg' => 0, 'alert' => 1, 'crit' => 2, 'error' => 3, 
+  'warning' => 4, 'notice' => 5, 'info' => 6, 'debug' => 7 );
+
+sub syslog_pri_time { 
+  my($fac) = exists($facility{$_[0]})?$facility{$_[0]}:1;
+  my($lvl) = exists($level{$_[1]})?$level{$_[1]}:6;
+  my($pri) = $fac*8 + $lvl; 
+  my($time) = POSIX::strftime("%b %e %H:%M:%S", localtime()); 
+  return "<$pri>$time"; 
+}
+
+1;
