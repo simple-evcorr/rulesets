@@ -1,0 +1,97 @@
+#
+# Defining an External Map for Friendly Names
+# -------------------------------------------
+#
+#  Problem: Generic ports on a switch mean nothing without a description.
+#           "my-important-switch Port GigabitEthernet3/16 Down!"
+#  Solution: Define an external map on the sec server with descriptions!
+#           "WEBSERVER-01 Port Down!"
+#  Credits: Thank you to everyone on the sec mailing list that helped me solve this issue.
+#    * http://www.mail-archive.com/simple-evcorr-users@lists.sourceforge.net/msg00980.html
+#    * http://www.mail-archive.com/simple-evcorr-users@lists.sourceforge.net/msg00980.html
+#
+# Within my action lines, $0 is the entire line that matches 'pattern' and %s is the 'desc'.  Occasionally, I find
+# it useful to use a "simplified" 'desc' for management (%s), while the techies can understand the raw syslog line ($0).
+
+
+# ---- External File
+# First, with an external file (e.g. /etc/sec/myhashes.txt), we create simple line items with the patterns
+# that will appear in your syslog line. From syslog, the captured text is "GigabitEthernet1/4".  Please note,
+# the contents of the file should not contain the "#" marks and should not be indented. The "G" should be the
+# first character on the first line within your file.
+#    GigabitEthernet1/4=FIREWALL
+#    GigabitEthernet3/16=WEBSERVER-01
+
+
+# ---- Rule 1
+# Next, we want to load the hashes at start or restart (so that we can modify the file and send SEC an SIGHUP)
+
+type=Single
+desc=Load hashes at startup
+ptype=RegExp
+continue=TakeNext
+pattern=SEC_STARTUP|SEC_RESTART
+context=SEC_INTERNAL_EVENT
+action=eval %a ( undef $myHashes; open(FILE, "</etc/sec/myhashes.txt"); \
+    while (<FILE>) { chomp; my ($key, $val) = split /=/; $myHashes{"$key"} = $val; }; return scalar(keys %myHashes);)
+
+# Since you will have multiple hash files (e.g. one hash file for each important switch), you will need to come up
+# with a naming convention that you can follow throughout your code.  I recommend a new .sec file for each set.
+
+
+# ---- Rule 2
+# The context is important here.  We ONLY want to process this rule IF there is a corresponding element in the array.
+# In this example, GigabitEthernet1/4 and GigabitEthernet3/16 WILL trigger this rule, other interfaces will NOT.
+# We set continue=TakeNext because want to continue processing rules (you'll see why later).
+
+# NOTE: Throughout the following rules and patterns, $2 will be the interface that has the up/down.
+
+# The %host variable will contain the result of $myHashes{"GigabitEthernet3/16"}, which after loading the file will
+# result in "WEBSERVER-01".  Our email subject will then be "[ERROR] WEBSERVER-01 DOWN".
+
+type=Single
+ptype=RegExp
+pattern=(my-important-switch).*%LINK-3-UPDOWN: Interface ([\w\/]+), changed state to down
+continue=TakeNext
+context= =($myHashes{"$2"})
+desc=(MAJOR) $1 interface $2 LINK DOWN has been detected!
+action=eval %host ( return $myHashes{"$2"}; ); add linkdown_$2 $0; report linkdown_$2 /bin/mail -s '[ERROR] %host DOWN' alerts@fabrikam.local
+
+
+# ---- Rule 3
+# Here is a PairWithWindow example that I use to check to see if the Interface has come back after a few seconds
+# (e.g. a server reboot) or is still down.  The previous rule must be set to "TakeNext" so that this rule can process.
+# The rule sets an additional context (e.g. MYHASHES_$2, which will read as MYHASHES_GigabitEthernet3/16 when processing)
+# when the interface has not returned for 60 seconds, so that the final rule (4) can run.
+
+# NOTE: We can set pattern2 to use $1 (since we used the parenthesis) or we could have retyped "my-important-switch".
+
+type=PairWithWindow
+ptype=RegExp
+pattern=(my-important-switch).*%LINK-3-UPDOWN: Interface ([\w\/]+), changed state to down
+continue=TakeNext
+context= =($myHashes{"$2"})
+desc=(MAJOR) $1 interface $2 LINK DOWN and not up for 60 seconds!
+action=eval %host ( return $myHashes{"$2"}; ); add linkdown_$2 %s; report linkdown_$2 /bin/mail -s '[ERROR] %host DOWN for 60 seconds!' alerts@fabrikam.local
+        create MYHASHES_$2
+ptype2=RegExp
+pattern2=($1).*LINK-3-UPDOWN: Interface ($2), changed state to up
+context2= =($myHashes{"$2"})
+desc2=(MINOR) %1 interface %2 BOUNCE within 60 seconds.
+action2=eval %host ( return $myHashes{"$2"}; ); add linkdown_$2 $0; add linkdown_$2 %s; report linkdown_$2 /bin/mail -s '[NOTICE] %host ALIVE' alerts@fabrikam.local
+window=60
+
+
+# ---- Rule 4
+# This rule uses the additional context (provided from the last rule) so that this rule can process ONLY on
+# returned connections; this will prevent it from firing on switch reboots.  Finally, when the interface comes
+# back online, we want to delete the temporary context (MYHASHES_$2 or MYHASHES_GigabitEthernet3/16) to prevent
+# this rule from running when it should not (e.g. switch reboots or when the interface bounces quickly).
+
+type=Single
+ptype=RegExp
+pattern=(my-important-switch).*%LINK-3-UPDOWN: Interface ([\w\/]+), changed state to up
+context= =($myHashes{"$2"}) && MYHASHES_$2
+desc=(MINOR) $1 interface $2 LINK UP has been detected!
+action=eval %host ( return $myHashes{"$2"}; ); add linkdown_$2 $0; report linkdown_$2 /bin/mail -s '[NOTICE] %host ALIVE' alerts@fabrikam.local; \
+       delete MYHASHES_$2
