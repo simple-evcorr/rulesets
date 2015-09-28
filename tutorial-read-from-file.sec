@@ -45,10 +45,9 @@ while (<FILE>) { chomp; my ($key, $val) = split /=/; $myHashes{"$key"} = $val; }
 # We set continue=TakeNext because want to continue processing rules (you'll see why later).
 
 # NOTE: Throughout the following rules and patterns, $2 will be the interface that has the up/down.
-
-# A performance related note: the action 'eval %host ( return $myHashes{"$2"}; )' can be replaced with
-# 'lcall %host $2 -> ( sub { $myHashes{$_[0]} } )' and the context expression '=($myHashes{"$2"})' with 
-# '$2 -> ( sub { exists($myHashes{$_[0]}) } )' which compile the Perl code only once when sec rules are loaded
+# A performance related note: in the following rules, the action 'eval %host ( return $myHashes{"$2"}; )' can be 
+# replaced with 'lcall %host $2 -> ( sub { $myHashes{$_[0]} } )' and the context expression '=($myHashes{"$2"})' 
+# with '$2 -> ( sub { exists($myHashes{$_[0]}) } )' which compile the Perl code only once when sec rules are loaded
 
 # The %host variable will contain the result of $myHashes{"GigabitEthernet3/16"}, which after loading the file will
 # result in "WEBSERVER-01".  Our email subject will then be "[ERROR] WEBSERVER-01 DOWN".
