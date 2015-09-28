@@ -32,8 +32,9 @@ ptype=RegExp
 continue=TakeNext
 pattern=SEC_STARTUP|SEC_RESTART
 context=SEC_INTERNAL_EVENT
-action=eval %a ( undef $myHashes; open(FILE, "</etc/sec/myhashes.txt"); \
-    while (<FILE>) { chomp; my ($key, $val) = split /=/; $myHashes{"$key"} = $val; }; return scalar(keys %myHashes);)
+action=lcall %a -> ( sub { %myHashes = (); open(FILE, "</etc/sec/myhashes.txt"); \
+while (<FILE>) { chomp; my ($key, $val) = split /=/; $myHashes{"$key"} = $val; }; return scalar(keys %myHashes); } )
+
 
 # Since you will have multiple hash files (e.g. one hash file for each important switch), you will need to come up
 # with a naming convention that you can follow throughout your code.  I recommend a new .sec file for each set.
@@ -72,7 +73,7 @@ pattern=(my-important-switch).*%LINK-3-UPDOWN: Interface ([\w\/]+), changed stat
 continue=TakeNext
 context= =($myHashes{"$2"})
 desc=(MAJOR) $1 interface $2 LINK DOWN and not up for 60 seconds!
-action=eval %host ( return $myHashes{"$2"}; ); add linkdown_$2 %s; report linkdown_$2 /bin/mail -s '[ERROR] %host DOWN for 60 seconds!' alerts@fabrikam.local
+action=eval %host ( return $myHashes{"$2"}; ); add linkdown_$2 %s; report linkdown_$2 /bin/mail -s '[ERROR] %host DOWN for 60 seconds!' alerts@fabrikam.local; \
         create MYHASHES_$2
 ptype2=RegExp
 pattern2=($1).*LINK-3-UPDOWN: Interface ($2), changed state to up
