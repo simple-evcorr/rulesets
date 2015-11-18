@@ -1,0 +1,73 @@
+#
+# Sending Reformatted Data to ElasticSearch
+# -----------------------------------------
+#
+#  Problem: Logstash lines are verbatim log messages, we want to add some intelligence.
+#           "%SEC-6-IPACCESSLOGP: list ACCESS-LIST-IN denied tcp 10.1.2.22(1234) -> 10.1.3.33(5678), 1 packet"
+#  Solution: Reformat your message using regex to json and send it to elasticsearch.
+#           "{"timestamp": 123456789000, "srcip": "10.1.2.22","dstip": "10.1.3.33","srcport": 1234, "dstport": 5678, "protocol": "udp", "disposition": "denied"}"
+#
+
+
+# Jan 13 10:49:14 my-router 291: 000288: Jan 13 10:48:40.215: %SEC-6-IPACCESSLOGP: list ACCESS-LIST-IN denied tcp 10.1.2.22(1234) -> 10.1.3.33(5678), 1 packet
+type=Single
+ptype=RegExp
+pattern=SEC-6-IPACCESSLOGP:\slist\s[\w\-]+\s([\w]+)\s([\w]+)\s([\d\.]+)\((\d+)\)\s->\s([\d\.]+)\((\d+)\)
+desc='{"timestamp": EPOCH, "srcip": "$3", "dstip": "$5", "srcport": $4, "dstport": $6, "protocol": "$2", "disposition": "$1"}'
+action=shellcmd /bin/echo %s | sed -e "s/EPOCH/`date +%%s`000/" | curl -d @- http://elasticsearch.local:9200/acl-`date +%%Y.%%m.%%d`/entry
+
+# NOTES:
+#  * If you add in additional fields for host and access-list name, be sure to make them "not_analyzed", elasticsearch
+#    splits on word boundries (dashes), you will need to update your pattern and desc fields to include them.
+#  * Elasticsearch prefers splitting out time sensitive data into time-based indexes. This way you can optimize older indexes.
+
+# To update your elasticsearch mapping:
+# curl -XPUT http://elasticsearch.local:9200/_template/acl -d '
+# {
+#   "order": 0,
+#   "template": "acl-*",
+#   "settings": {
+#     "index.refresh_interval": "5s",
+#     "number_of_shards" : 1
+#   },
+#   "mappings": {
+#     "entry": {
+#       "properties": {
+#         "disposition": {
+#           "type": "string"
+#         },
+#         "dstip": {
+#           "type": "ip",
+#           "fields": {
+#             "raw": {
+#               "type": "string",
+#               "index": "not_analyzed"
+#             }
+#           }
+#         },
+#         "dstport": {
+#           "type": "integer"
+#         },
+#         "protocol": {
+#           "type": "string"
+#         },
+#         "srcip": {
+#           "type": "ip",
+#           "fields": {
+#             "raw": {
+#               "type": "string",
+#               "index": "not_analyzed"
+#             }
+#           }
+#         },
+#         "srcport": {
+#           "type": "integer"
+#         },
+#         "timestamp": {
+#           "type": "date",
+#           "format": "dateOptionalTime"
+#         }
+#       }
+#     }
+#   }
+# }'
