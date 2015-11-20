@@ -16,7 +16,7 @@ via whichever method you choose (`yum`, `apt-get`, tarball).
 
 During our journey, we will create the following files, it may be required to create the paths.
 
-### `/etc/systemd/system/sec\@.service`
+### `/etc/systemd/system/sec@.service`
 
 The `systemd` unit file defines the your service.  You can find more information about the format and structure
 of a `systemd` unit file within the references, this document will detail the "non-standard" parts.
