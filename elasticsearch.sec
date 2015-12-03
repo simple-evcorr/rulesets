@@ -13,8 +13,8 @@
 type=Single
 ptype=RegExp
 pattern=SEC-6-IPACCESSLOGP:\slist\s[\w\-]+\s([\w]+)\s([\w]+)\s([\d\.]+)\((\d+)\)\s->\s([\d\.]+)\((\d+)\)
-desc='{"timestamp": EPOCH, "srcip": "$3", "dstip": "$5", "srcport": $4, "dstport": $6, "protocol": "$2", "disposition": "$1"}'
-action=shellcmd /bin/echo %s | sed -e "s/EPOCH/`date +%%s`000/" | curl -d @- http://elasticsearch.local:9200/acl-`date +%%Y.%%m.%%d`/entry
+desc='{"timestamp": %{u}000, "srcip": "$3", "dstip": "$5", "srcport": $4, "dstport": $6, "protocol": "$2", "disposition": "$1"}'
+action=pipe '%s' curl -d @- http://elasticsearch.local:9200/acl-`date +%%Y.%%m.%%d`/entry
 
 # NOTES:
 #  * If you add in additional fields for host and access-list name, be sure to make them "not_analyzed", elasticsearch
