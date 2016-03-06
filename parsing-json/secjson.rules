@@ -14,7 +14,7 @@ action=eval %o ( require '/etc/sec/perl/SecJson.pm' ); \
 # it is assumed that the string which follows @cee: is in JSON format
 # and the rule attempts to parse it, storing the results into pattern
 # match cache under the CEE entry. If the JSON string contains 
-# the field "test" (e.g., @cee: {"test":"abc",{"field1":"val1",...),
+# the field "test" (e.g., @cee: {"test":"abc","test2":"def",...),
 # the value of this field is printed to standard output.
 
 type=Single
