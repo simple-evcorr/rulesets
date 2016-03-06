@@ -1,0 +1,26 @@
+# When sec starts, load the SecJson.pm module from /etc/sec/perl directory
+
+type=Single
+ptype=SubStr
+pattern=SEC_STARTUP
+context=SEC_INTERNAL_EVENT
+desc=load SecJson.pm module
+action=eval %o ( require '/etc/sec/perl/SecJson.pm' ); \
+       if %o ( logonly Module SecJson.pm loaded ) \
+        else ( logonly Failed to load SecJson.pm; eval %o exit(1) )
+
+
+# When an event is observed which contains the @cee: substring, 
+# it is assumed that the string which follows @cee: is in JSON format
+# and the rule attempts to parse it, storing the results into pattern
+# match cache under the CEE entry. If the JSON string contains 
+# the field "test" (e.g., @cee: {"test":"abc",{"field1":"val1",...),
+# the value of this field is printed to standard output.
+
+type=Single
+ptype=PerlFunc
+pattern=sub { if ($_[0] =~ /\@cee: (.+)/) { \
+              return SecJson::json2matchvar($1); } return 0; }
+varmap=CEE
+desc=test JSON parsing
+action=write - The value of test variable: $+{test}
