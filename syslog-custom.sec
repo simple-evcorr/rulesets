@@ -13,7 +13,7 @@
 # variable program names -- in order to change program names on the fly,
 # the rule communicates with syslog daemon through /dev/log socket
 # (since daemon=3 and info=6, and the priority value is calculated as
-# 8*facility+level, the priority value for "daemon.info" is 8*3+6=30
+# 8*facility+level, the priority value for "daemon.info" is 8*3+6=30)
 
 type=Single
 ptype=RegExp
