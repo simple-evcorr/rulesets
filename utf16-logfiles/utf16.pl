@@ -41,7 +41,7 @@ if (!defined($ARGV[2])) {
 
 if (!defined($ARGV[3])) { 
   $encoding = "UTF-16LE"; 
-} elsif ($ARGV[3] =~ /^(UTF-16(?:LE|BE)?)/i) {
+} elsif ($ARGV[3] =~ /^(UTF-16(?:LE|BE)?)$/i) {
   $encoding = $1;
 } else {
   die "encoding has to be set to 'UTF-16LE', 'UTF-16BE' or 'UTF-16'\n";
