@@ -1,0 +1,22 @@
+# SimpleEventCorrelator.rc
+# this file (SECRC) is read first, these settings are treated as
+# though they had been entered on the command line
+
+# pull in additional conf files
+--conf=etc/xymon.sr
+--intevents
+
+# define the log file to be scanned
+--conf=etc/CEPoller.sr
+--input=D:\apps\tomcat\current\logs\pollerLog.log=CEPOLLER
+--reopen-timeout=61
+
+# other useful settings
+--debug=6
+--dump=tmp/sec.dump
+
+--conf=etc/01control.sr
+--input=etc/control=CONTROL
+
+#--conf=etc/calendar.sr
+

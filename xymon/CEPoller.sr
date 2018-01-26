@@ -1,0 +1,63 @@
+################################################################################
+# Simple Event Correlation rules for the CEPoller log
+# v0.001 2017-10-09 First version
+################################################################################
+#
+# NB, you cannot use the # character within a rule, rules are terminated by a
+# blank line or the # comment character.  If you want to document within a
+# rule, use the rem keyword instead.
+#
+################################################################################
+
+################################################################################
+# SYNOPSIS RULE #1
+# dont apply these rules unless the context matches
+###############################################################################
+type=single
+continue=dontcont
+ptype=tvalue
+pattern=TRUE
+desc=don't apply these rules unless CE Poller log.
+context=! CEPOLLER
+action=none
+
+###############################################################################
+
+################################################################################
+# SYNOPSIS RULE #2
+# just process any lines observed on input containing the words FATAL or ERROR 
+################################################################################
+type=SingleWithSuppress
+ptype=RegExp
+pattern=(Mailbox Poller is already running)(.*)
+desc=Fatal error
+action= delete waiting_for_badstuff ;\
+        add bad_stuff_happening %t ;\
+        add bad_stuff_happening $0 ;\
+        empty bad_stuff_happening %msg ;\
+        lcall %r1 %null %COLUMN severe %LIFETIME %msg -> ( sub { Sec2Xym::XymonStatusUpdate(@_) } ) ;\
+        logonly %r1 ;\
+        set bad_stuff_happening 300 ( \
+               add bad_stuff_happening %t ;\
+               add bad_stuff_happening %COLUMN recovered;\
+               add bad_stuff_happening No more badstuff observed in last 5 minutes;\
+               copy bad_stuff_happening %msg ;\
+               lcall %r1 %null %COLUMN green %LIFETIME %msg -> ( sub { Sec2Xym::XymonStatusUpdate(@_) } ) ;\
+               logonly %r1 \
+             )
+window=2
+
+################################################################################
+# SYNOPSIS RULE #3
+# create hard link to newest log file in the parent directory
+# NB the subroutine refresh_logpath takes 2 arguments, the first is the name
+# of the link to be created and the second is the regex of candidate files
+################################################################################
+# not used # type = calendar
+# not used # time = * * * * *
+# not used # desc = relink current file
+# not used # action = lcall %relink D:\apps\tomcat\current\logs\pollerLog.log .*_log\.txt -> \
+# not used #                        ( sub { Sec2Xym::refresh_logpath(@_) } ) ;\
+# not used #                 if %relink  ( logonly %relink )
+
+################################################################################

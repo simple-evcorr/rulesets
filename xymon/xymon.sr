@@ -1,0 +1,18 @@
+# Load and configure the Sec2Xym module
+type=Single
+ptype=RegExp
+pattern=(SEC_STARTUP|SEC_RESTART)
+desc=Load and configure the Sec2Xym module
+context=SEC_INTERNAL_EVENT
+action=assign %XYMSRV <ip_address_of_xymon_server> ;\
+       assign %XYMDL <path/under_download_directory/on_xymon_server> ;\
+       assign %COLUMN sec ;\
+       assign %LIFETIME 30 ;\
+       eval %SECHOME ( $ENV {'SECHOME'} );\
+       eval %SECSVC ( $ENV {'SECSVC'} );\
+       eval %a (require 'lib/sec2xym.pm'); \
+                if %a (\
+                  lcall %a %XYMSRV 1984 %LIFETIME %SECSVC %SECHOME 0 0 -> \
+                       ( sub { Sec2Xym::init_sec2xym(@_) } ) ;\
+                       logonly %a;\
+                ) else ( eval %a exit(1) )

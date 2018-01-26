@@ -1,0 +1,100 @@
+###############################################################################
+# Rules to allow Windows implementations to be controlled when
+# no signals are otherwise supported
+###############################################################################
+type=single
+continue=dontcont
+ptype=tvalue
+pattern=TRUE
+desc=don't apply these rules unless from control file.
+context=! CONTROL
+action=none
+
+###############################################################################
+type=single
+continue=takenext
+ptype=tvalue
+pattern=TRUE
+desc=report event processed.
+action=create EVENT_PROCESSED
+
+###############################################################################
+type = single
+continue=dontcont
+desc = do a full restart of SEC
+ptype = regexp
+pattern = ^reset
+action = lcall %r HUP -> ( sub { Sec2Xym::fake_signal_handler(@_) } );\
+         if %r ( logonly %r )
+
+###############################################################################
+type = single
+continue=dontcont
+desc = do a soft restart of SEC
+ptype = regexp
+pattern = ^reload
+action = lcall %r ABRT -> ( sub { Sec2Xym::fake_signal_handler(@_) } );\
+         if %r ( logonly %r )
+
+###############################################################################
+type = single
+continue=dontcont
+desc = dynamically cycle through logging verbosity levels
+ptype = regexp
+pattern = ^verbose
+action = lcall %r INT -> ( sub { Sec2Xym::fake_signal_handler(@_) } );\
+         if %r ( logonly %r )
+
+###############################################################################
+type = single
+continue=dontcont
+desc = write info about SEC state to the dump file
+ptype = regexp
+pattern = ^dumpstats
+action = lcall %r USR1 -> ( sub { Sec2Xym::fake_signal_handler(@_) } );\
+         if %r ( logonly %r )
+
+###############################################################################
+type = single
+continue=dontcont
+desc = close and reopen output logs
+ptype = regexp
+pattern = ^logrotate
+action = lcall %r USR2 -> ( sub { Sec2Xym::fake_signal_handler(@_) } );\
+         if %r ( logonly %r )
+
+###############################################################################
+type = single
+continue=dontcont
+desc = implement fake signal handling
+ptype = regexp
+pattern = ^kill (TERM|HUP|ABRT|USR1|USR2|INT)
+action = lcall %r $1 -> ( sub { Sec2Xym::fake_signal_handler(@_) } );\
+         if %r ( logonly %r )
+
+###############################################################################
+type = single
+continue=dontcont
+desc = test upstream Xymon server
+ptype = regexp
+pattern = ^ping
+action = lcall %r %XYMSRV 1984 ping -> ( sub { Sec2Xym::sendToXymon(@_) } );\
+         logonly %r
+
+###############################################################################
+type = single
+continue=dontcont
+desc = update configuration files stored on Xymon server
+ptype = regexp
+pattern = ^refresh_config
+action = lcall %r %XYMDL/SimpleEventCorrelator.sr %XYMDL/01control.sr %XYMDL/xymon.sr -> ( sub { Sec2Xym::refresh_config(@_) } ) ; logonly %r
+
+###############################################################################
+type = single
+continue=dontcont
+desc = toggle debug of Sec2Xym module
+ptype = regexp
+pattern = ^debug
+action = lcall %r -> ( sub { Sec2Xym::toggle_debug(@_) } ) ; logonly %r
+
+###############################################################################
