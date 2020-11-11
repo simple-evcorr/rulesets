@@ -94,9 +94,9 @@ sub json2matchvar {
   if (!defined($json_line)) { return; }
   if (!defined($prefix)) { $prefix = ""; }
 
-  # mimic the default behavior of SEC input processing where Perl
-  # wide characters are not created from utf8 encoded characters
-  # (for enabling this behavior, JSON::decode_json() function)
+  # mimic the default behavior of SEC input processing where Perl wide
+  # characters are not created from utf8 encoded characters (for enabling
+  # this behavior, use JSON::decode_json() instead of JSON::from_json())
   
   $ptr = JSON::from_json($json_line);
   $matchvar_hash = {};
