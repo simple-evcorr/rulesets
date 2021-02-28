@@ -46,7 +46,9 @@ sub match {
   @matches = map { Encode::encode('UTF-8', $_) } @matches;
 
   # return the array @matches, so that its elements would be mapped to
-  # SEC match variables $1, $2, ...
+  # SEC match variables $1, $2, etc. (since Perl wide characters are not
+  # returned from this function, it will avoid Perl warnings and errors
+  # when Perl wide characters are written to outputs like files and sockets)
 
   return @matches;
 }

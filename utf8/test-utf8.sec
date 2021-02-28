@@ -23,8 +23,8 @@ action=eval %o (require "/etc/sec/perl/SecUtf8.pm"); \
 # Note that before returning values of match variables, the SecUtf8::match() 
 # function converts Perl wide characters back to UTF-8 multibyte characters 
 # in returned values, and thus the $1 and $2 match variables will hold values 
-# in UTF-8 encoding (that will avoid warnings and errors from Perl when Perl
-# wide characters are written to various outputs like files and sockets).
+# in UTF-8 encoding (that will avoid Perl warnings and errors when Perl wide
+# characters are written to outputs like files and sockets).
 
 type=Single
 ptype=PerlFunc
