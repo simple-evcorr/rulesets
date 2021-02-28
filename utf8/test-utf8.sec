@@ -10,16 +10,18 @@ action=eval %o (require "/etc/sec/perl/SecUtf8.pm"); \
         else ( logonly Failed to load SecUtf8.pm; eval %o exit(1) )
 
 
-# Verify if the input line is a sequence of two or more letters and begins 
-# with a-umlaut, o-umlaut or u-umlaut. Since the SecUtf8::match() function 
-# converts each multibyte UTF-8 character into a Perl wide character, 
-# [[:alpha:]] is able to match such characters. Also note that the 'use utf8' 
-# statement will create Perl wide characters from UTF-8 multibyte characters 
-# ä ö ü in the regular expression, and [äöü] will thus match either a-umlaut, 
-# o-umlaut or u-umlaut wide character in converted input line. Note that
-# before returning values of match variables, the SecUtf8::match() function
-# converts Perl wide characters back to UTF-8 multibyte characters in returned
-# values, and therefore $1 and $2 variables will hold values in UTF-8 encoding.
+# Match the input line with regular expression ^([äöü])([[:alpha:]]+)$ 
+# (i.e., verify that input line is a sequence of two or more letters and 
+# begins with a-umlaut, o-umlaut or u-umlaut).
+# Since the SecUtf8::match() function converts each multibyte UTF-8 character 
+# into a Perl wide character in the input line, [[:alpha:]] is able to match 
+# such characters. Also note that the 'use utf8' statement will create Perl 
+# wide characters from UTF-8 multibyte characters ä ö ü in the regular 
+# expression, and [äöü] will thus match either a-umlaut, o-umlaut or u-umlaut 
+# Perl wide character in the converted input line. Note that before returning 
+# values of match variables, the SecUtf8::match() function converts Perl wide 
+# characters back to UTF-8 multibyte characters in returned values, and thus
+# the $1 and $2 match variables will hold values in UTF-8 encoding.
 
 type=Single
 ptype=PerlFunc
