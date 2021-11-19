@@ -9,9 +9,9 @@ our @ISA = qw(Exporter);
 our $VERSION = 1.00;
 our @EXPORT_OK = qw(json2matchvar);
 
-# this module needs the perl JSON module for parsing json input
+# this module needs the perl Cpanel::JSON::XS module for parsing json input
 
-use JSON;
+use Cpanel::JSON::XS;
 
 sub flatten {  
   my($ref, $ret, $prefix) = @_;
@@ -85,7 +85,10 @@ sub flatten {
 # (a) digits only (e.g., $1) 
 # (b) the first character is a letter or underscore, while the following
 #     characters can be alphanumerals, underscores and exclamation marks
-#     (e.g., $+{_inputsrc} or $+{myvar})
+#     (e.g., $+{myvar}). However, when creating named match variables from 
+#     a JSON input string, it is recommended to begin the variable name with 
+#     a letter, since names of special automatically created variables begin 
+#     with an underscore (e.g., $+{_inputsrc}).
 
 sub json2matchvar {
   my($json_line, $prefix) = @_;
@@ -96,9 +99,10 @@ sub json2matchvar {
 
   # mimic the default behavior of SEC input processing where Perl wide
   # characters are not created from utf8 encoded characters (for enabling
-  # this behavior, use JSON::decode_json() instead of JSON::from_json())
+  # this behavior, use Cpanel::JSON::XS->new->utf8->decode() instead of
+  # Cpanel::JSON::XS->new->decode())
   
-  $ptr = JSON::from_json($json_line);
+  $ptr = Cpanel::JSON::XS->new->decode($json_line);
   $matchvar_hash = {};
 
   flatten($ptr, $matchvar_hash, $prefix); 
